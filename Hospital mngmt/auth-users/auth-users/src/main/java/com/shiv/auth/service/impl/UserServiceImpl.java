@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseEntity<?> validateToken(String token) throws GenericException {
         if(jwtUtil.isTokenExpired(token))
-            throw new GenericException(ResponseConstant.REFRESH_TOKEN_HAS_EXPIRED);
+            throw new GenericException(ResponseConstant.ACCESS_TOKEN_HAS_EXPIRED);
         if(!jwtUtil.isAccessToken(token))
             throw new GenericException(ResponseConstant.INVALID_ACCESS_TOKEN);
         JSONObject jsonObject=new JSONObject();

@@ -10,4 +10,6 @@ public class KeyConstant {
     public static final String ROLE="role";
     public static final String CREATED_ON="created_on";
     public static final String TOKEN_TYPE="token_type";
+    public static final String AUTHORIZATION="Authorization";
+    public static final String BEARER="Bearer ";
 }

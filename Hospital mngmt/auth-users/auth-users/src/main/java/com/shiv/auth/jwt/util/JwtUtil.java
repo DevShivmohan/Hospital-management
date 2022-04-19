@@ -68,9 +68,6 @@ public class JwtUtil {
     public boolean isAccessToken(String token){
         Claims claims= extractAllClaims(token);
         String tokenType= (String) claims.get(KeyConstant.TOKEN_TYPE);
-        if(tokenType!=null && tokenType.equals(KeyConstant.ACCESS_TOKEN))
-            return true;
-        else
-            return false;
+        return tokenType!=null && tokenType.equals(KeyConstant.ACCESS_TOKEN);
     }
 }
