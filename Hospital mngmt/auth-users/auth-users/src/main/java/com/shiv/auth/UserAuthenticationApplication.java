@@ -22,7 +22,7 @@ public class UserAuthenticationApplication {
 	@PostConstruct
 	public  void d(){
 		List<User> users= List.of(new User(1L,"Shiv","shiv1@gmail.com",bCryptPasswordEncoder.encode("pass1"),"ROLE_USER",true,0,"7080713024",new Date()),
-				new User(2L,"Mohan","shiv2@gmail.com",bCryptPasswordEncoder.encode("pass2"),"ROLE_USER",true,0,"7080713024",new Date()));
+				new User(2L,"Mohan","shiv2@gmail.com",bCryptPasswordEncoder.encode("pass2"),"ROLE_PATIENT",true,0,"7080713024",new Date()));
 	userRepository.saveAll(users);
 	}
 
