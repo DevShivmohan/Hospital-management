@@ -50,6 +50,10 @@ public class JwtUtil {
 
     public String generateRefreshToken(User user) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(KeyConstant.NAME,user.getName());
+        claims.put(KeyConstant.ROLE,user.getRole());
+        claims.put(KeyConstant.MOBILE,user.getMobile());
+        claims.put(KeyConstant.CREATED_ON,user.getCreatedOn());
         claims.put(KeyConstant.TOKEN_TYPE,KeyConstant.REFRESH_TOKEN);
         return createToken(claims, user.getEmail(), TimeUnit.DAYS.toMillis(10));
     }
