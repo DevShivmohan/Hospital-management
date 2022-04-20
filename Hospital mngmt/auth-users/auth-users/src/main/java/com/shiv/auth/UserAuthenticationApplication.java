@@ -13,6 +13,7 @@ import java.util.List;
 
 @SpringBootApplication
 public class UserAuthenticationApplication {
+
 	@Autowired
 	private UserRepository userRepository;
 
@@ -26,9 +27,7 @@ public class UserAuthenticationApplication {
 	userRepository.saveAll(users);
 	}
 
-
 	public static void main(String[] args) {
 		SpringApplication.run(UserAuthenticationApplication.class, args);
 	}
-
 }

@@ -12,4 +12,6 @@ public class KeyConstant {
     public static final String TOKEN_TYPE="token_type";
     public static final String AUTHORIZATION="Authorization";
     public static final String BEARER="Bearer ";
+    public static final String ROLE_PATIENT="ROLE_PATIENT";
+    public static final String ROLE_USER="ROLE_USER";
 }

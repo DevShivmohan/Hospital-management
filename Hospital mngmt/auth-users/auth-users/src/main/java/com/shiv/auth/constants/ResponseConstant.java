@@ -6,4 +6,5 @@ public class ResponseConstant {
     public static final String ACCESS_TOKEN_HAS_EXPIRED="Access token has expired";
     public static final String INVALID_ACCESS_TOKEN="Invalid access token";
     public static final String INVALID_REFRESH_TOKEN = "Invalid refresh token";
+    public static final String TOKEN_EXPIRED = "Token has expired";
 }

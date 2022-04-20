@@ -4,6 +4,7 @@ import com.shiv.auth.constants.EndpointConstant;
 import com.shiv.auth.dto.RefreshTokenDTO;
 import com.shiv.auth.dto.UserAuthRequestDTO;
 import com.shiv.auth.exception.GenericException;
+import com.shiv.auth.exception.UserBlockedException;
 import com.shiv.auth.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -18,7 +19,7 @@ public class UserAuthenticationController {
     private UserService userService;
 
     @PostMapping(value = EndpointConstant.REST_LOGIN,produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> userAuthentication(@RequestBody UserAuthRequestDTO userAuthRequestDTO){
+    public ResponseEntity<?> userAuthentication(@RequestBody UserAuthRequestDTO userAuthRequestDTO) throws UserBlockedException {
         return userService.genTokenByAuthentication(userAuthRequestDTO.getUsername(),userAuthRequestDTO.getPassword());
     }
 
@@ -28,7 +29,7 @@ public class UserAuthenticationController {
     }
 
     @GetMapping(value = EndpointConstant.REST_VALIDATE_TOKEN,produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> validateToken(@RequestBody RefreshTokenDTO refreshTokenDTO) throws GenericException {
+    public ResponseEntity<?> validateToken(@RequestBody RefreshTokenDTO refreshTokenDTO) throws GenericException, UserBlockedException {
         return userService.validateToken(refreshTokenDTO.getAccessToken());
     }
 }

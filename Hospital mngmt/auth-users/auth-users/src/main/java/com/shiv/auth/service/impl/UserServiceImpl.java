@@ -3,10 +3,17 @@ package com.shiv.auth.service.impl;
 import com.shiv.auth.constants.KeyConstant;
 import com.shiv.auth.constants.ResponseConstant;
 import com.shiv.auth.dao.UserRepository;
+import com.shiv.auth.dto.SimpleEmailDTO;
 import com.shiv.auth.dto.UserAuthResponseDTO;
+import com.shiv.auth.dto.UserRequestDTO;
+import com.shiv.auth.dto.UserResponseDTO;
+import com.shiv.auth.entity.User;
 import com.shiv.auth.exception.GenericException;
+import com.shiv.auth.exception.UserAlreadyExistException;
+import com.shiv.auth.exception.UserBlockedException;
 import com.shiv.auth.jwt.util.JwtUtil;
 import com.shiv.auth.service.CustomUserDetail;
+import com.shiv.auth.service.MailService;
 import com.shiv.auth.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -17,11 +24,20 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
 
 @Service
 @Slf4j
 public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private MailService mailService;
+
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Autowired
     private UserRepository userRepository;
@@ -33,9 +49,11 @@ public class UserServiceImpl implements UserService {
     private AuthenticationManager authenticationManager;
 
     @Override
-    public ResponseEntity<?> genTokenByAuthentication(String username, String password) {
+    public ResponseEntity<?> genTokenByAuthentication(String username, String password) throws UserBlockedException {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username,password));
         final var user=userRepository.findByEmail(username).orElseThrow(()->new UsernameNotFoundException(ResponseConstant.USER_NOT_FOUND));
+        if(!user.isActive())
+            throw new UserBlockedException("User account "+user.getEmail()+" has blocked");
         return ResponseEntity.status(HttpStatus.OK).body(new UserAuthResponseDTO(jwtUtil.generateAccessToken(user),jwtUtil.generateRefreshToken(user)));
     }
 
@@ -50,18 +68,60 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> validateToken(String token) throws GenericException {
+    public ResponseEntity<?> validateToken(String token) throws GenericException, UserBlockedException {
         if(jwtUtil.isTokenExpired(token))
             throw new GenericException(ResponseConstant.ACCESS_TOKEN_HAS_EXPIRED);
         if(!jwtUtil.isAccessToken(token))
             throw new GenericException(ResponseConstant.INVALID_ACCESS_TOKEN);
         JSONObject jsonObject=new JSONObject();
         final var user=userRepository.findByEmail(jwtUtil.extractUsername(token)).orElseThrow(()->new UsernameNotFoundException(ResponseConstant.USER_NOT_FOUND));
+        if(!user.isActive())
+            throw new UserBlockedException("User account "+user.getEmail()+" has blocked");
         jsonObject.put(KeyConstant.NAME,user.getName());
         jsonObject.put(KeyConstant.EMAIL,user.getEmail());
         jsonObject.put(KeyConstant.MOBILE,user.getMobile());
         jsonObject.put(KeyConstant.ROLE,user.getRole());
         jsonObject.put(KeyConstant.CREATED_ON,user.getCreatedOn());
         return ResponseEntity.status(HttpStatus.OK).body(jsonObject.toString());
+    }
+
+    @Override
+    public ResponseEntity<?> saveUser(UserRequestDTO userRequestDTO) throws UserAlreadyExistException, GenericException {
+        final var users= userRepository.getUsers().orElseThrow(()->new UsernameNotFoundException("Nothing any users found"));
+        for(var user:users)
+            if(user.getEmail().equalsIgnoreCase(userRequestDTO.getEmail()))
+                throw new UserAlreadyExistException("User "+userRequestDTO.getEmail()+" already exists in our database");
+        if(!(userRequestDTO.getRole().equals(KeyConstant.ROLE_USER) || userRequestDTO.getRole().equals(KeyConstant.ROLE_PATIENT)))
+            throw new GenericException("Invalid user role");
+        var user=new User();
+        user.setName(userRequestDTO.getName());
+        user.setEmail(userRequestDTO.getEmail());
+        user.setPassword(bCryptPasswordEncoder.encode(userRequestDTO.getPassword()));
+        user.setRole(userRequestDTO.getRole());
+        user.setActive(true);
+        user.setLoginAttemptCounter(0);
+        user.setMobile(userRequestDTO.getMobile());
+        user.setCreatedOn(new Date());
+        if(userRepository.save(user)!=null) {
+            mailService.sendMail(new SimpleEmailDTO(user.getEmail(),"User registration success","Hi "+user.getName()+",\n\n Your registration has successful. "+user.toString()));
+            return ResponseEntity.status(HttpStatus.OK).body(new UserResponseDTO(user.getName(), user.getEmail(), user.getRole(), user.getMobile(), user.isActive(), user.getCreatedOn()));
+        }
+        else
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Due to some technical problem request cann't be processed");
+    }
+
+    @Override
+    public ResponseEntity<?> updateUser(UserRequestDTO userRequestDTO, String email) {
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<?> removeUser(String email) {
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<?> getUsers() {
+        return null;
     }
 }
