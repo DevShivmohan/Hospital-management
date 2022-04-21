@@ -26,7 +26,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -120,16 +122,29 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> updateUser(UserRequestDTO userRequestDTO, String email) {
-        return null;
+         final var user=userRepository.findByEmail(email).orElseThrow(()->new UsernameNotFoundException(ResponseConstant.USER_NOT_FOUND));
+         user.setName(userRequestDTO.getName());
+         user.setPassword(bCryptPasswordEncoder.encode(userRequestDTO.getPassword()));
+         user.setMobile(userRequestDTO.getMobile());
+        if(userRepository.save(user)!=null)
+            return ResponseEntity.status(HttpStatus.OK).body(new UserResponseDTO(user.getName(), user.getEmail(), user.getRole(), user.getMobile(), user.isActive(), user.getCreatedOn()));
+        else
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Due to some technical problem request cann't be processed");
     }
 
     @Override
     public ResponseEntity<?> removeUser(String email) {
-        return null;
+        final var user=userRepository.findByEmail(email).orElseThrow(()->new UsernameNotFoundException(ResponseConstant.USER_NOT_FOUND));
+        userRepository.deleteById(user.getId());
+        return ResponseEntity.status(HttpStatus.OK).body(new UserResponseDTO(user.getName(), user.getEmail(), user.getRole(), user.getMobile(), user.isActive(), user.getCreatedOn()));
     }
 
     @Override
     public ResponseEntity<?> getUsers() {
-        return null;
+        final var users=userRepository.getUsers().orElseThrow(()->new UsernameNotFoundException("Nothing any user found"));
+        List<UserResponseDTO> userResponseDTOS=new ArrayList<>();
+        for(var user:users)
+            userResponseDTOS.add(new UserResponseDTO(user.getName(),user.getEmail(),user.getRole(),user.getMobile(),user.isActive(),user.getCreatedOn()));
+        return ResponseEntity.status(HttpStatus.OK).body(userResponseDTOS);
     }
 }
