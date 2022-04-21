@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(EndpointConstant.REST_AUTH)
+@RequestMapping(EndpointConstant.REST_USER+EndpointConstant.REST_AUTH)
 public class UserAuthenticationController {
 
     @Autowired

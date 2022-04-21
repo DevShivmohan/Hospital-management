@@ -1,0 +1,13 @@
+server:
+  port: 1000
+  address: localhost
+
+# eureka configuration not register microservices by default false
+eureka:
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+  server:
+    waitTimeInMsWhenSyncEmpty: 0
+  instance:
+    hostname: localhost

@@ -3,7 +3,6 @@ package com.shiv.auth.service.impl;
 import com.shiv.auth.constants.KeyConstant;
 import com.shiv.auth.constants.ResponseConstant;
 import com.shiv.auth.dao.UserRepository;
-import com.shiv.auth.dto.SimpleEmailDTO;
 import com.shiv.auth.dto.UserAuthResponseDTO;
 import com.shiv.auth.dto.UserRequestDTO;
 import com.shiv.auth.dto.UserResponseDTO;
@@ -50,11 +49,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> genTokenByAuthentication(String username, String password) throws UserBlockedException {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username,password));
-        final var user=userRepository.findByEmail(username).orElseThrow(()->new UsernameNotFoundException(ResponseConstant.USER_NOT_FOUND));
-        if(!user.isActive())
-            throw new UserBlockedException("User account "+user.getEmail()+" has blocked");
-        return ResponseEntity.status(HttpStatus.OK).body(new UserAuthResponseDTO(jwtUtil.generateAccessToken(user),jwtUtil.generateRefreshToken(user)));
+        final var finalUser=userRepository.findByEmail(username).orElseThrow(()->new UsernameNotFoundException(ResponseConstant.USER_NOT_FOUND));
+        if(!finalUser.isActive())
+            throw new UserBlockedException("User account "+finalUser.getEmail()+" has blocked");
+        try{
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username,password));
+        }catch(BadCredentialsException badCredentialsException){
+            var user=userRepository.findByEmail(username).orElseThrow(()->new BadCredentialsException("Bad credential"));
+            if(user.getLoginAttemptCounter()>=3)
+                user.setActive(false);
+            user.setLoginAttemptCounter(user.getLoginAttemptCounter() + 1);
+            userRepository.save(user);
+            throw new BadCredentialsException("Bad credential");
+        }
+        finalUser.setLoginAttemptCounter(0);
+        userRepository.save(finalUser);
+        return ResponseEntity.status(HttpStatus.OK).body(new UserAuthResponseDTO(jwtUtil.generateAccessToken(finalUser),jwtUtil.generateRefreshToken(finalUser)));
     }
 
     @Override
@@ -91,7 +101,7 @@ public class UserServiceImpl implements UserService {
         for(var user:users)
             if(user.getEmail().equalsIgnoreCase(userRequestDTO.getEmail()))
                 throw new UserAlreadyExistException("User "+userRequestDTO.getEmail()+" already exists in our database");
-        if(!(userRequestDTO.getRole().equals(KeyConstant.ROLE_USER) || userRequestDTO.getRole().equals(KeyConstant.ROLE_PATIENT)))
+        if(!(userRequestDTO.getRole().equals(KeyConstant.ROLE_DOCTOR)))
             throw new GenericException("Invalid user role");
         var user=new User();
         user.setName(userRequestDTO.getName());
@@ -102,10 +112,8 @@ public class UserServiceImpl implements UserService {
         user.setLoginAttemptCounter(0);
         user.setMobile(userRequestDTO.getMobile());
         user.setCreatedOn(new Date());
-        if(userRepository.save(user)!=null) {
-            mailService.sendMail(new SimpleEmailDTO(user.getEmail(),"User registration success","Hi "+user.getName()+",\n\n Your registration has successful. "+user.toString()));
+        if(userRepository.save(user)!=null)
             return ResponseEntity.status(HttpStatus.OK).body(new UserResponseDTO(user.getName(), user.getEmail(), user.getRole(), user.getMobile(), user.isActive(), user.getCreatedOn()));
-        }
         else
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Due to some technical problem request cann't be processed");
     }

@@ -45,7 +45,7 @@ public class JwtUtil {
         claims.put(KeyConstant.MOBILE,user.getMobile());
         claims.put(KeyConstant.CREATED_ON,user.getCreatedOn());
         claims.put(KeyConstant.TOKEN_TYPE,KeyConstant.ACCESS_TOKEN);
-        return createToken(claims, user.getEmail(), TimeUnit.MINUTES.toMillis(10));
+        return createToken(claims, user.getEmail(), TimeUnit.SECONDS.toMillis(58));
     }
 
     public String generateRefreshToken(User user) {
